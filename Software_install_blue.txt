@@ -1,0 +1,269 @@
+
+
+
+debian@192.168.7.2
+
+
+temppwd
+
+********************************************************************************************************************
+********************************************************************************************************************
+
+echo "debian ALL=(ALL) NOPASSWD: ALL" | sudo tee -a /etc/sudoers.d/debian >/dev/null
+
+
+********************************************************************************************************************
+********************************************************************************************************************
+sudo -s
+
+
+connmanctl services
+
+
+ wifi_38d269dfedab_5052414d4f44_managed_psk
+
+
+
+
+sudoedit /var/lib/connman/wifi.config
+
+[service_wifi_38d269dfedab_5052414d4f44_managed_psk]
+Type = wifi
+Security = wpa2
+Name = xxxxxx
+Passphrase = password
+
+
+ctrl-o
+enter
+ctrl-x
+
+
+Ctrl-x y enter
+
+
+
+if cat >
+Ctrl-D
+exit
+
+********************************************************************************************************************
+********************************************************************************************************************
+
+sudo apt-get -y update
+sudo apt-get -y dist-upgrade
+sudo apt-get install -y cpufrequtils git
+
+
+********************************************************************************************************************
+********************************************************************************************************************
+
+cd /opt/scripts && git pull
+
+
+sudo /opt/scripts/tools/update_kernel.sh --lts-4_19 --bone-rt-channel
+
+
+sudo sed -i 's/#dtb=/dtb=am335x-boneblue.dtb/g' /boot/uEnv.txt
+
+
+sudo sed -i 's|#dtb_overlay=/lib/firmware/<file8>.dtbo|dtb_overlay=/lib/firmware/BB-I2C1-00A0.dtbo\n#dtb_overlay=/lib/firmware/BB-UART4-00A0.dtbo\n#dtb_overlay=/lib/firmware/BB-ADC-00A0.dtbo|g' /boot/uEnv.txt
+
+
+sudo sed -i 's|uboot_overlay_pru=/lib/firmware/AM335X-PRU-RPROC-4-14-TI-00A0.dtbo|#uboot_overlay_pru=/lib/firmware/AM335X-PRU-RPROC-4-14-TI-00A0.dtbo|g' /boot/uEnv.txt
+
+
+sudo sed -i 's|#uboot_overlay_pru=/lib/firmware/AM335X-PRU-UIO-00A0.dtbo|uboot_overlay_pru=/lib/firmware/AM335X-PRU-UIO-00A0.dtbo|g' /boot/uEnv.txt
+
+
+sudo sed -i 's/GOVERNOR="ondemand"/GOVERNOR="performance"/g' /etc/init.d/cpufrequtils
+
+
+
+sudo systemctl disable bb-wl18xx-bluetooth.service
+
+sudo /opt/scripts/tools/grow_partition.sh
+
+
+sudo reboot
+
+
+
+sudo dd if=/dev/zero of=/dev/mmcblk1 bs=1M count=10
+
+sudo /opt/scripts/tools/developers/update_bootloader.sh
+
+
+
+
+
+
+
+
+********************************************************************************************************************
+********************************************************************************************************************
+
+
+sudoedit /etc/default/ardupilot
+
+
+OPTF="-E /dev/ttyO0"
+TELEM1="-C /dev/ttyO1"
+TELEM2="-A udp:192.168.xxx.x:14550"
+UPSQ="-B /dev/ttyO2"
+RANGER="-F /dev/ttyO5"
+
+
+
+********************************************************************************************************************
+********************************************************************************************************************
+
+
+sudoedit /lib/systemd/system/arducopter.service
+
+
+[Unit]
+Description=ArduCopter Service
+After=networking.service
+StartLimitIntervalSec=0
+Conflicts=arduplane.service 
+
+[Service]
+EnvironmentFile=/etc/default/ardupilot
+ExecStartPre=/usr/bin/ardupilot/aphw
+ExecStart=/usr/bin/ardupilot/arducopter $OPTF $TELEM1 $TELEM2 $UPSQ $RANGER
+
+Restart=on-failure
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+sudoedit /lib/systemd/system/arduplane.service
+
+
+[Unit]
+Description=ArduPlane Service
+After=networking.service
+StartLimitIntervalSec=0
+Conflicts=arducopter.service 
+
+[Service]
+EnvironmentFile=/etc/default/ardupilot
+ExecStartPre=/usr/bin/ardupilot/aphw
+ExecStart=/usr/bin/ardupilot/arduplane $OPTF $TELEM1 $TELEM2 $UPSQ $RANGER
+
+Restart=on-failure
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+********************************************************************************************************************
+********************************************************************************************************************
+
+
+sudo mkdir -p /usr/bin/ardupilot
+
+sudoedit /usr/bin/ardupilot/aphw
+
+
+
+#!/bin/bash
+# aphw
+# ArduPilot hardware configuration.
+
+/bin/echo 80 >/sys/class/gpio/export
+/bin/echo out >/sys/class/gpio/gpio80/direction
+/bin/echo 1 >/sys/class/gpio/gpio80/value
+/bin/echo pruecapin_pu >/sys/devices/platform/ocp/ocp:P8_15_pinmux/state
+
+
+
+
+
+sudo chmod 0755 /usr/bin/ardupilot/aphw
+
+
+
+********************************************************************************************************************
+********************************************************************************************************************
+
+
+sudo rm -r ardupilot
+
+
+git clone https://github.com/ArduPilot/ardupilot
+cd ardupilot
+
+git branch -a
+git checkout Copter-4.1
+
+git branch
+
+git submodule update --init --recursive
+
+
+./waf configure --board blue
+
+./waf copter
+
+
+
+scp ./build/blue/bin/arducopter debian@192.168.x.x:/home/debian
+
+
+********************************************************************************************************************
+********************************************************************************************************************
+
+
+sudo rm /usr/bin/ardupilot/arducopter
+
+sudo mv arducopter /usr/bin/ardupilot
+
+
+
+sudo chmod 0755 /usr/bin/ardupilot/arducopter
+
+
+
+
+********************************************************************************************************************
+********************************************************************************************************************
+
+
+
+sudo systemctl enable arducopter.service
+
+sudo reboot
+
+
+sudo systemctl
+press to quit   q
+
+
+
+sudo systemctl disable arducopter.service
+sudo systemctl start arducopter.service
+sudo systemctl stop arducopter.service
+
+
+systemctl status arducopter.service
+
+sudo shutdown now
+
+
+
+
+
+
+
+
+
+
+
+
