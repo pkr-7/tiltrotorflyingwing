@@ -20,14 +20,14 @@ sudo -s
 connmanctl services
 
 
- wifi_38d269dfedab_5052414d4f44_managed_psk
+ wifi_38d2xxxxedab_5052xxxx4f44_managed_psk
 
 
 
 
 sudoedit /var/lib/connman/wifi.config
 
-[service_wifi_38d269dfedab_5052414d4f44_managed_psk]
+[service_wifi_38d2xxxxedab_5052xxxx4f44_managed_psk]
 Type = wifi
 Security = wpa2
 Name = xxxxxx
